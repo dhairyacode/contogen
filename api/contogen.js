@@ -10,20 +10,37 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Wikipedia Summary API
+    // Step 1: Get summary from Wikipedia
     const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
     const text = await wikiRes.text();
     let wikiData = {};
     try {
       wikiData = JSON.parse(text);
-    } catch (e) {
+    } catch {
       wikiData = {};
     }
 
     let description = wikiData.extract || "No description found.";
 
-    // Limit description to ~100-200 words
-    const words = description.split(/\s+/).slice(0, 200);
+    // Step 2: If less than ~400 words, attempt to fetch full content
+    const wordCount = description.split(/\s+/).length;
+    if (wordCount < 400 && wikiData.title) {
+      try {
+        // Wikipedia action API to fetch plain content
+        const fullRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&format=json&titles=${encodeURIComponent(wikiData.title)}&origin=*`);
+        const fullData = await fullRes.json();
+        const pages = fullData.query?.pages || {};
+        const page = Object.values(pages)[0];
+        if (page?.extract) {
+          description = page.extract;
+        }
+      } catch (e) {
+        // fallback to summary if full content fails
+      }
+    }
+
+    // Limit to ~400 words
+    const words = description.split(/\s+/).slice(0, 400);
     description = words.join(' ');
 
     return res.status(200).json({
