@@ -17,7 +17,14 @@ export default async function handler(req, res) {
     if (mode === "summary") {
       // DuckDuckGo Instant Answer API
       const duckRes = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`);
-      const duckData = await duckRes.json();
+      const text = await duckRes.text(); // read raw text
+      let duckData = {};
+      try {
+        duckData = JSON.parse(text);
+      } catch (e) {
+        // fallback if JSON.parse fails
+        duckData = {};
+      }
 
       description = duckData.AbstractText || "No summary found.";
       source = duckData.AbstractURL || "DuckDuckGo";
@@ -25,7 +32,13 @@ export default async function handler(req, res) {
     } else if (mode === "descriptive") {
       // Wikipedia Summary API
       const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
-      const wikiData = await wikiRes.json();
+      const text = await wikiRes.text(); // read raw text
+      let wikiData = {};
+      try {
+        wikiData = JSON.parse(text);
+      } catch (e) {
+        wikiData = {};
+      }
 
       description = wikiData.extract || "No description found.";
       source = wikiData.content_urls?.desktop?.page || "Wikipedia";
