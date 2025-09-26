@@ -25,9 +25,9 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       text-align: center;
       width: 90%;
-      max-width: 500px;
+      max-width: 600px;
     }
-    input, select, button {
+    input, button {
       padding: 0.6rem;
       margin: 0.4rem;
       font-size: 1rem;
@@ -43,15 +43,15 @@
     button:hover {
       background: #005bb5;
     }
-    pre {
+    .output {
+      margin-top: 1rem;
       text-align: left;
-      background: #1e1e1e;
-      color: #f1f1f1;
+      background: #f0f0f0;
       padding: 1rem;
       border-radius: 8px;
-      overflow-x: auto;
-      max-height: 300px;
-      margin-top: 1rem;
+      max-height: 400px;
+      overflow-y: auto;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -59,19 +59,14 @@
   <div class="container">
     <h1>ContoGen API Tester</h1>
     <input id="queryInput" type="text" placeholder="Enter a term (e.g., apple)">
-    <select id="typeSelect">
-      <option value="summary">Summary (DuckDuckGo)</option>
-      <option value="descriptive">Descriptive (Wikipedia)</option>
-    </select>
     <br>
     <button onclick="callAPI()">Get Description</button>
-    <pre id="output">Result will appear here...</pre>
+    <div id="output" class="output">Description will appear here...</div>
   </div>
 
   <script>
     async function callAPI() {
       const query = document.getElementById("queryInput").value.trim();
-      const type = document.getElementById("typeSelect").value;
       const output = document.getElementById("output");
 
       if (!query) {
@@ -79,12 +74,19 @@
         return;
       }
 
-      output.textContent = "⏳ Fetching data...";
+      output.textContent = "⏳ Fetching description...";
 
       try {
-        const res = await fetch(`/api/contogen?query=${encodeURIComponent(query)}&type=${type}`);
+        const res = await fetch(`/api/contogen?query=${encodeURIComponent(query)}`);
         const data = await res.json();
-        output.textContent = JSON.stringify(data, null, 2);
+
+        if (data.description) {
+          output.textContent = data.description;
+        } else if (data.error) {
+          output.textContent = "❌ " + data.error;
+        } else {
+          output.textContent = "❌ No description found.";
+        }
       } catch (err) {
         output.textContent = "❌ Error: " + err.message;
       }
